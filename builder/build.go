@@ -2,7 +2,7 @@ package builder
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 )
 
@@ -57,7 +57,7 @@ var headBytes = []byte{
 	226, 4, 0,
 }
 
-func Build(inputSrc, outputSrc string) {
+func Build(inputSrcArr []string, outputSrc string) {
 	times := 0x2f3
 
 	out, err := os.OpenFile(outputSrc, os.O_TRUNC|os.O_CREATE, 0644)
@@ -68,13 +68,34 @@ func Build(inputSrc, outputSrc string) {
 
 	out.Write(headBytes[:times])
 
-	src, err := os.Open(inputSrc)
-	if err != nil {
-		panic(err.Error())
-	}
-	defer src.Close()
+	for _, inputSrc := range inputSrcArr {
+		src, err := os.Open(inputSrc)
+		if err != nil {
+			panic(err.Error())
+		}
+		defer src.Close()
 
-	srcBytes, err := ioutil.ReadAll(src)
-	fmt.Println(string(srcBytes))
-	out.Write(srcBytes)
+		srcBytes, err := io.ReadAll(src)
+		srcBytes = append(srcBytes, '\n')
+		fmt.Println(string(srcBytes))
+		out.Write(srcBytes)
+	}
+}
+
+// 验证卡带存储方式
+func check(ticCartName string) {
+	mygame, _ := os.Open(ticCartName)
+	srcBytes, _ := io.ReadAll(mygame)
+	times := 0x2f3
+
+	for i := 0; i < times; i++ {
+		if srcBytes[i] != headBytes[i] {
+			fmt.Printf("%x ", i)
+			fmt.Println("src:", srcBytes[i], "head:", headBytes[i])
+		} else {
+			// fmt.Println("ok")
+		}
+	}
+
+	return
 }
